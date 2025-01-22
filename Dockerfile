@@ -93,8 +93,8 @@ ENV PATH="/opt2/RECAP/:${PATH}"
 # check recap installation
 RUN bash /opt2/RECAP/RECAP_MACS.sh --help
 
-# install macs2
-RUN pip install MACS2
+# install peak callers
+RUN pip install MACS2 SICER2
 
 # cleanup
 WORKDIR /data2
