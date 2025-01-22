@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # ==================================================================
 # RECAP Re-Mix
 # RECAP is a wrapper algorithm that resamples ChIP-seq and control

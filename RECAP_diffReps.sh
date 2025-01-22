@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ===============================================================
 # RECAP Wrapper
 # RECAP is a wrapper algorithm that resamples ChIP-seq and control
@@ -33,10 +33,8 @@
 # ===============================================================
 # Script version number
 VERSION="1.0.2"     
-# Provide a variable for the location of this and other scripts
-SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-REMIX_PATH=${SCRIPT_PATH}/RECAP_Re-Mix.sh
-PERL_PATH=${SCRIPT_PATH}/RECAP.pl
+REMIX_PATH=RECAP_Re-Mix.sh
+PERL_PATH=RECAP.pl
 # Text display commands
 bold=$(tput bold)
 normal=$(tput sgr0)

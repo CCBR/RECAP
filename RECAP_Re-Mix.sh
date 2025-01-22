@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ===============================================================
 # RECAP Re-Mix
 # RECAP is a wrapper algorithm that resamples ChIP-seq and control
@@ -30,8 +30,6 @@
 # ===============================================================
 # Script version number
 VERSION="1.0.2"
-# Provide a variable with the location of this script.
-SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Text display commands
 bold=$(tput bold)
 normal=$(tput sgr0)
