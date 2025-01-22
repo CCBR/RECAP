@@ -59,10 +59,10 @@ echo "##################################################"
 echo "######         RECAP RE-MIX  v$VERSION         ######"
 echo "##################################################"
 echo ""
-echo "Input directory  (absolute path):    $INPUT_DIR"
+echo "Input directory:    $INPUT_DIR"
 echo "Treatment library:  $TREATMENT_NAME"
 echo "Control library:    $CONTROL_NAME"
-echo "Output directory (absolute path):   $OUTPUT_DIR"
+echo "Output directory:   $OUTPUT_DIR"
 echo "Re-mix method:      $METHOD_NAME"
 echo "Number of re-mixes: $BOOTSTRAP"
 echo "Random seed: $SEED"
@@ -72,8 +72,6 @@ then
 	echo -e "\nERROR: Input directory does not exist"
 	exit 1
 fi
-
-cd $INPUT_DIR
 
 if [[ ! -e $TREATMENT_NAME || ! $TREATMENT_NAME == *.bed ]]
 then
@@ -97,14 +95,13 @@ fi
 # Base names of treatment and control libraries
 TREATMENT_NAME_BASE="${TREATMENT_NAME%.*}"
 CONTROL_NAME_BASE="${CONTROL_NAME%.*}"
-	
+
+mkdir -p $OUTPUT_DIR/re-mix
 for (( BOOTSTRAP_COUNT=1; BOOTSTRAP_COUNT<=$BOOTSTRAP; BOOTSTRAP_COUNT++ ))
 do
-	cd $INPUT_DIR
 	echo ""
 	echo "${bold}Starting Re-Mixing Procedure #$BOOTSTRAP_COUNT ${normal}"
 	echo "Creating directory for re-mix files:"
-	mkdir -p $OUTPUT_DIR/re-mix
 	echo "Check!"
 	
 	echo "Concatenating treatment and control libraries"
@@ -117,37 +114,33 @@ do
 		echo "Unequal mixing method selected"
 		FIRST_LINES=$( wc -l < $TREATMENT_NAME )
 		LAST_LINES=$( wc -l < $CONTROL_NAME )
-		cd $OUTPUT_DIR/re-mix
 		
 	# If method is equal
 	elif [ $METHOD = 1 ]
 	then
 		echo "Equal mixing method selected"
-		cd $OUTPUT_DIR/re-mix
 		COMBINED_LINES=$(wc -l < $TREATMENT_NAME_BASE.bootstrap_$BOOTSTRAP_COUNT.tmp)
 		FIRST_LINES=$(( COMBINED_LINES / 2 ))
 		LAST_LINES=$(( COMBINED_LINES - FIRST_LINES ))
 	fi
 	
 	echo "Re-mixing..."
-	shuf --random-source=<(get_seeded_random $SEED) -o $TREATMENT_NAME_BASE.bootstrap_$BOOTSTRAP_COUNT.tmp < $TREATMENT_NAME_BASE.bootstrap_$BOOTSTRAP_COUNT.tmp
+	shuf --random-source=<(get_seeded_random $SEED) -o $OUTPUT_DIR/re-mix/$TREATMENT_NAME_BASE.bootstrap_$BOOTSTRAP_COUNT.tmp < $TREATMENT_NAME_BASE.bootstrap_$BOOTSTRAP_COUNT.tmp
 	echo "Check!"
 	
 	echo "Creating re-mixed treatment library"
-	head -n $FIRST_LINES $TREATMENT_NAME_BASE.bootstrap_$BOOTSTRAP_COUNT.tmp > $TREATMENT_NAME_BASE.bootstrap_$BOOTSTRAP_COUNT.bed
+	head -n $FIRST_LINES $TREATMENT_NAME_BASE.bootstrap_$BOOTSTRAP_COUNT.tmp > $OUTPUT_DIR/re-mix/$TREATMENT_NAME_BASE.bootstrap_$BOOTSTRAP_COUNT.bed
 	echo "Check!"
 	
 	echo "Creating re-mixed control library"
-	tail -n $LAST_LINES  $TREATMENT_NAME_BASE.bootstrap_$BOOTSTRAP_COUNT.tmp > $CONTROL_NAME_BASE.bootstrap_$BOOTSTRAP_COUNT.bed
+	tail -n $LAST_LINES  $TREATMENT_NAME_BASE.bootstrap_$BOOTSTRAP_COUNT.tmp > $OUTPUT_DIR/re-mix/$CONTROL_NAME_BASE.bootstrap_$BOOTSTRAP_COUNT.bed
 	echo "Check!"
 	
 	echo "Deleting temporary files"
-	rm $TREATMENT_NAME_BASE.bootstrap_$BOOTSTRAP_COUNT.tmp
+	rm $OUTPUT_DIR/re-mix/$TREATMENT_NAME_BASE.bootstrap_$BOOTSTRAP_COUNT.tmp
 	echo "Check!"
 	echo "Completed re-mix #$BOOTSTRAP_COUNT"
 done
-
-cd $INPUT_DIR
 
 end_time=`date +%s`
 echo RECAP RE-MIX execution time: `expr $end_time - $start_time`s.
@@ -165,10 +158,10 @@ usage() {
   [Output directory] [Re-mix method]  [Bootstrap]
 
  ${bold}USAGE:${normal}
-  -i, --input 	    Input file directory (absolute path) 
+  -i, --input 	    Input file directory 
   -t, --treatment   Treatment bed file
   -c, --control     Control bed file
-  -o, --output      Output file directory (absolute path)
+  -o, --output      Output file directory
   -m, --method      Method of re-mixing (equal) or (unequal)
   -b, --bootstrap   Number of re-mixes
 

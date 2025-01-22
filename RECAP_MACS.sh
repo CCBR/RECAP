@@ -32,11 +32,7 @@
 
 # ===============================================================
 # Script version number
-VERSION="1.0.2"     
-# Provide a variable for the location of this and other scripts
-SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-REMIX_PATH=RECAP_Re-Mix.sh
-PERL_PATH=RECAP.pl
+VERSION="1.0.2"
 # Text display commands
 bold=$(tput bold)
 normal=$(tput sgr0)
@@ -61,8 +57,6 @@ then
   echo -e "\nERROR: Output directory does not exist"
   exit 1
 fi
-
-cd $INPUT_DIR
 
 if [[ ! -e $CHIP_NAME  ]]
 then
@@ -92,28 +86,31 @@ then
 fi
 
 # 1) Re-mix ChIP and control bed files
-bash $REMIX_PATH -i $INPUT_DIR -t $CHIP_NAME -c $CONTROL_NAME -o $OUTPUT_DIR -m unequal -b $BOOTSTRAP -s $SEED
+mkdir -p $OUTPUT_DIR
+RECAP_Re-Mix.sh -i $INPUT_DIR -t $CHIP_NAME -c $CONTROL_NAME -o $OUTPUT_DIR -m unequal -b $BOOTSTRAP -s $SEED
 
 # 2) Call original peaks using MACS
 # Please specify your own MACS parameters!
 # NOTE: p-value threshold must be set to 0.1 for MACS
-cd $INPUT_DIR
+mkdir -p $OUTPUT_DIR/MACS_original
 macs2 callpeak -t $CHIP_NAME -c $CONTROL_NAME --pvalue 0.10 -n ${CHIP_NAME%.*} --outdir "$OUTPUT_DIR/MACS_original"
 
 # 3) Call re-mixed peaks using MACS specifying desired parameters
 # Please specify your own MACS parameters!
 # NOTE: p-value threshold must be set to 0.1 for MACS
-cd "$OUTPUT_DIR/re-mix"
+pushd "$OUTPUT_DIR/re-mix"
 for (( i=1; i<=$BOOTSTRAP; i++ ))
 do
   macs2 callpeak -t "${CHIP_NAME%.bed}.bootstrap_$i.bed" -c "${CONTROL_NAME%.bed}.bootstrap_$i.bed" --pvalue 0.10 -n "${CHIP_NAME%.*}.bootstrap_$i" --outdir "$OUTPUT_DIR/MACS_re-mix"
 done
+popd
 
 # All non-MACS summary files in MACS_re-mix must be deleted if $BOOTSTRAP > 1
 if [ -d "$OUTPUT_DIR/MACS_re-mix" ]
 then 
-  cd "$OUTPUT_DIR/MACS_re-mix"
+  pushd "$OUTPUT_DIR/MACS_re-mix"
   find . -type f ! -name '*_peaks.xls' -delete 
+  popd
 else
   echo "Output directory doesn't exist!"
   exit 1
@@ -121,11 +118,17 @@ fi
 
 # 4) Recalibrate original peak p-values using RECAP
 # NOTE: Check for correct header and p-value column if you obtain any errors here
-cd $OUTPUT_DIR
-mkdir MACS_RECAP
-
-perl $PERL_PATH --dirOrig "$OUTPUT_DIR/MACS_original" --nameOrig "${CHIP_NAME%.*}_peaks.xls" --dirRemix "$OUTPUT_DIR/MACS_re-mix" --nameRemix "${CHIP_NAME%.*}" --dirOutput "$OUTPUT_DIR/MACS_RECAP" --nameOutput "${CHIP_NAME%.*}.RECAP.bootstrap_${BOOTSTRAP}_peaks.xls" --bootstrap $BOOTSTRAP --header $HEADER --pvalCol 7 --delim t --software M
-
+mkdir -p $OUTPUT_DIR/MACS_RECAP
+pushd $OUTPUT_DIR
+RECAP.pl \
+  --dirOrig "$(realpath $OUTPUT_DIR/MACS_original)" \
+  --nameOrig "${CHIP_NAME%.*}_peaks.xls" \
+  --dirRemix "$(realpath $OUTPUT_DIR/MACS_re-mix)" \
+  --nameRemix "${CHIP_NAME%.*}" \
+  --dirOutput "$(realpath $OUTPUT_DIR/MACS_RECAP)" \
+  --nameOutput "${CHIP_NAME%.*}.RECAP.bootstrap_${BOOTSTRAP}_peaks.xls" \
+  --bootstrap $BOOTSTRAP --header $HEADER --pvalCol 7 --delim t --software M
+popd
 #################################################################
 ######################## End Script Here ########################
 }
@@ -139,10 +142,10 @@ usage() {
   [Output directory] [Bootstrap]  [Header]
 
  ${bold}USAGE:${normal}
-  -i, --input 	    Input file directory (absolute path)
+  -i, --input 	    Input file directory
   -t, --treatment   Treatment file (full name with extension)
   -c, --control     Control file (full name with extension)
-  -o, --output      Output file directory (absolute path)
+  -o, --output      Output file directory
   -b, --bootstrap   Number of re-mixes
   -e, --header      Header number of peak calling output files
 
